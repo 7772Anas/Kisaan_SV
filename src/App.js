@@ -1,7 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './components/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Features from './components/Features';
@@ -13,23 +11,39 @@ import Planning from './components/Planning';
 import Finance from './components/Finance';
 import Agrobazar from './components/agrobazar';
 import SoilTesting from './components/SoilTesting';
-import AccountSetup from './components/AccountSetup';
-import AdminPage from './components/AdminPage';
 import Agroexpert from './components/Agroexpert';
+import ServiceProviderProfile from './components/ServiceProviderProfile';
+import AdminLogin from './components/AdminLogin';
+import FarmerLogin from './components/FarmerLogin';
+import FarmerProfile from './components/FarmerProfile';
+import BuyerLogin from './components/BuyerLogin';
+import BuyerProfile from './components/BuyerProfile';
+import ServiceProviderLogin from './components/ServiceProviderLogin';
 
-function App() {
+function AppLayout() {
+  const location = useLocation();
+  // List of routes where Navbar should be shown
+  const publicRoutes = [
+    '/',
+    '/explore',
+    '/explore/market-hub',
+    '/climateconnect',
+    '/planning',
+    '/finance',
+    '/agrobazar',
+    '/soiltesting',
+    '/Agroexpert',
+    '/serviceprovider',
+    '/AdminLogin',
+    '/FarmerLogin',
+    '/BuyerLogin',
+  ];
+  const showNavbar = publicRoutes.includes(location.pathname);
   return (
-    <AuthProvider>
-      <Router>
         <div className="min-h-screen bg-white">
-          <Navbar />
+      {showNavbar && <Navbar />}
           <Routes>
-            <Route path="/" element={
-              <>
-                <Hero />
-                <Features />
-              </>
-            } />
+        <Route path="/" element={<><Hero /><Features /></>} />
             <Route path="/explore" element={<Explore />} />
             <Route path="/explore/market-hub" element={<MarketHub />} />
             <Route path="/climateconnect" element={<ClimateConnect />} />
@@ -37,21 +51,27 @@ function App() {
             <Route path="/finance" element={<Finance />} />
             <Route path="/agrobazar" element={<Agrobazar />} />
             <Route path="/soiltesting" element={<SoilTesting />} />
-            <Route path="/AccountSetup" element={<AccountSetup />} />
             <Route path="/Agroexpert" element={<Agroexpert />} />
-            <Route 
-              path="/admin" 
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminPage />
-                </ProtectedRoute>
-              } 
-            />
+        <Route path="/serviceprovider" element={<ServiceProviderProfile />} />
+        <Route path="/AdminLogin" element={<AdminLogin />} />
+        <Route path="/FarmerLogin" element={<FarmerLogin />} />
+        <Route path="/FarmerProfile" element={<FarmerProfile />} />
+        <Route path="/BuyerLogin" element={<BuyerLogin />} />
+        <Route path="/BuyerProfile" element={<BuyerProfile />} />
+        <Route path="/ServiceProviderLogin" element={<ServiceProviderLogin />} />
+        <Route path="/ServiceProviderProfile" element={<ServiceProviderProfile />} />
+        {/* Admin and protected routes removed for now */}
           </Routes>
           <Footer />
         </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppLayout />
       </Router>
-    </AuthProvider>
   );
 }
 

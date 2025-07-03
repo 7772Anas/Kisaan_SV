@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-//import sprinklerVideo from '../ks-images/sprinkler.mp4';
+import React, { useState, useEffect } from 'react';
+import sprinklerVideo from '../ks-images/sprinkler.mp4';
 import rainwaterVideo from '../ks-images/rainwater.mp4';
 import pipeVideo from '../ks-images/pipe.mp4';
 import fencingImage from '../ks-images/fencing.jpg';
@@ -7,6 +7,8 @@ import elecImage from '../ks-images/elec.jpg';
 import shedImage from '../ks-images/shed.jpg';
 import labourImage from '../ks-images/labour.jpg';
 import solarVideo from '../ks-images/solar.mp4';
+import { MapPin } from 'lucide-react';
+import { supabase } from './supabaseClient';
 
 // Service Card Component
 const ServiceCard = ({ title, description, children, locationLink }) => {
@@ -14,9 +16,10 @@ const ServiceCard = ({ title, description, children, locationLink }) => {
 
   return (
     <div
-      className={`relative bg-white rounded-lg shadow-md p-6 transition-all duration-300 ${
-        isHovered ? 'shadow-xl -translate-y-1 bg-green-50' : ''
+      className={`relative bg-white rounded-xl border border-green-100 shadow-sm p-6 max-w-sm mx-auto flex flex-col items-start transition-all duration-300 ${
+        isHovered ? 'shadow-lg scale-105 border-green-300 bg-green-50' : ''
       }`}
+      style={{ minHeight: 240 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -29,31 +32,131 @@ const ServiceCard = ({ title, description, children, locationLink }) => {
           className="absolute top-3 right-3 text-green-700 hover:text-green-900"
           title="Open Location"
         >
-          <svg xmlns="📍" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c1.104 0 2-.896 2-2s-.896-2-2-2-2 .896-2 2 .896 2 2 2zm0 0c-4.418 0-8 2.239-8 5v2h16v-2c0-2.761-3.582-5-8-5z" />
-          </svg>
+          <MapPin className="h-6 w-6" />
         </a>
       )}
-      <h3 className="text-xl font-semibold text-gray-800 mb-2">{title}</h3>
-      <p className="text-gray-600 mb-4">{description}</p>
-      {children}
+      <h3 className="text-xl font-bold text-green-800 mb-2 flex items-center gap-2">
+        <span className="inline-block w-2 h-2 rounded-full bg-green-400 mr-1"></span>{title}
+      </h3>
+      <p className="text-base text-gray-600 mb-4 leading-normal">{description}</p>
+      <div className="w-full">{children}</div>
     </div>
   );
 };
 
 // Request Form Component
-const RequestForm = ({ isOpen, onClose, fields, onSubmit }) => {
-  const [formData, setFormData] = useState({});
-  const [showOtherIssue, setShowOtherIssue] = useState(false);
+const RequestForm = ({ isOpen, onClose, fields, onSubmit, serviceTitle }) => {
+  const [formData, setFormData] = useState({ category: serviceTitle });
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const [farmerProfile, setFarmerProfile] = useState(null);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    const fetchUserAndProfile = async () => {
+      setLoading(true);
+      setError('');
+      setSuccess(false);
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      // Check if user is a farmer
+      const { data: farmerProfile } = await supabase
+        .from('farmer_profile_table')
+        .select('id, name, phone_number, address')
+        .eq('id', user.id)
+        .single();
+      if (farmerProfile) {
+        setFarmerProfile(farmerProfile);
+        setFormData({
+          name: farmerProfile.name,
+          phone: farmerProfile.phone_number,
+          address: farmerProfile.address,
+          category: serviceTitle,
+          categoryDescription: '',
+        });
+      } else {
+        setFarmerProfile(null);
+        setError('Please log in as a farmer to request this service.');
+      }
+      setLoading(false);
+    };
+    if (isOpen) fetchUserAndProfile();
+    // eslint-disable-next-line
+  }, [isOpen, serviceTitle]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form Data:', formData);
+    setError('');
+    setSuccess(false);
+    if (!user || !farmerProfile) {
+      setError('Please log in as a farmer to request this service.');
+      return;
+    }
+    // Insert into service_requests table (only farmer_id, category, description)
+    const { error: insertError } = await supabase
+      .from('service_requests')
+      .insert([
+        {
+          farmer_id: farmerProfile.id,
+          category: serviceTitle,
+          description: formData.categoryDescription,
+        },
+      ]);
+    if (insertError) {
+      setError('Failed to submit request. Please try again.');
+      return;
+    }
+    setSuccess(true);
     onSubmit(formData);
-    onClose();
+    // Optionally close the form after a short delay
+    setTimeout(() => {
+      setSuccess(false);
+      onClose();
+      setFormData({ category: serviceTitle });
+    }, 1500);
   };
 
   if (!isOpen) return null;
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 text-center">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 text-center">
+          <h3 className="text-xl font-semibold mb-2">Login Required</h3>
+          <p className="text-gray-700 mb-2">Please log in as a farmer to request this service.</p>
+          <div className="mt-4 flex justify-center gap-4">
+            <button onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">Close</button>
+            <button onClick={() => window.location.href = '/FarmerLogin'} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Login</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!farmerProfile) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 text-center">
+          <h3 className="text-xl font-semibold mb-2">Farmer Access Only</h3>
+          <p className="text-gray-700 mb-2">Please log in as a farmer to request this service.</p>
+          <button onClick={onClose} className="mt-4 px-4 py-2 bg-green-600 text-white rounded">Close</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -68,83 +171,60 @@ const RequestForm = ({ isOpen, onClose, fields, onSubmit }) => {
           </button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {fields.map((field, index) => (
-            <div key={index} className="transform transition-all duration-300 hover:translate-x-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {field.label}
-              </label>
-              {field.type === 'select' ? (
-                <select
-                  className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300"
-                  onChange={(e) => {
-                    setFormData({ ...formData, [field.name]: e.target.value });
-                    if (field.name === 'issueType') {
-                      setShowOtherIssue(e.target.value === 'Other');
-                    }
-                  }}
-                  required
-                >
-                  <option value="">Select {field.label}</option>
-                  {field.options.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              ) : field.type === 'textarea' ? (
-                <textarea
-                  className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300"
-                  placeholder={field.placeholder}
-                  onChange={(e) =>
-                    setFormData({ ...formData, [field.name]: e.target.value })
-                  }
-                  required
-                  rows="3"
-                />
-              ) : field.type === 'datetime-local' ? (
-                <input
-                  type="datetime-local"
-                  className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300"
-                  onChange={(e) =>
-                    setFormData({ ...formData, [field.name]: e.target.value })
-                  }
-                  required
-                />
-              ) : (
-                <input
-                  type={field.type}
-                  className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300"
-                  placeholder={field.placeholder}
-                  onChange={(e) =>
-                    setFormData({ ...formData, [field.name]: e.target.value })
-                  }
-                  required
-                />
-              )}
-            </div>
-          ))}
-          {showOtherIssue && (
-            <div className="transform transition-all duration-300 hover:translate-x-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Describe your issue in detail
-              </label>
-              <textarea
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300"
-                placeholder="Please describe your specific issue or requirement"
-                onChange={(e) =>
-                  setFormData({ ...formData, otherIssue: e.target.value })
-                }
-                required
-                rows="4"
-              />
-              <p className="mt-1 text-sm text-gray-500">
-                Please provide as much detail as possible about your issue or requirement
-              </p>
-            </div>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <input
+              type="text"
+              className="w-full p-2 border rounded-md bg-gray-100 cursor-not-allowed"
+              value={formData.name || ''}
+              readOnly
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+            <input
+              type="tel"
+              className="w-full p-2 border rounded-md bg-gray-100 cursor-not-allowed"
+              value={formData.phone || ''}
+              readOnly
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+            <input
+              type="text"
+              className="w-full p-2 border rounded-md bg-gray-100 cursor-not-allowed"
+              value={formData.address || ''}
+              readOnly
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <input
+              type="text"
+              className="w-full p-2 border rounded-md bg-gray-100 cursor-not-allowed"
+              value={serviceTitle}
+              readOnly
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Category Description</label>
+            <textarea
+              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300"
+              placeholder="Describe your issue or requirement"
+              value={formData.categoryDescription || ''}
+              onChange={e => setFormData({ ...formData, categoryDescription: e.target.value })}
+              required
+              rows="3"
+            />
+          </div>
+          <p className="text-xs text-gray-500 mt-1 mb-2">To update your profile details, go to Profile → Edit</p>
+          {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
+          {success && <p className="text-green-600 text-sm mb-2">Request submitted successfully!</p>}
           <button
             type="submit"
             className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+            disabled={success}
           >
             Submit Request
           </button>
@@ -659,6 +739,54 @@ const Planning = () => {
     },
   ];
 
+  // Add Transportation and Logistics services
+  const transportationServices = [
+    {
+      id: 'cropTransport',
+      title: 'Crop Transportation',
+      description: 'Get help with transporting your crops to markets or storage facilities.',
+      locationLink: 'https://www.google.com/maps/search/crop+transportation+near+me/',
+      fields: [
+        { name: 'name', label: 'Full Name', type: 'text', placeholder: 'Enter your full name' },
+        { name: 'phone', label: 'Phone Number', type: 'tel', placeholder: 'Enter your phone number' },
+        { name: 'pickupLocation', label: 'Pickup Location', type: 'text', placeholder: 'Enter pickup location' },
+        { name: 'dropLocation', label: 'Drop Location', type: 'text', placeholder: 'Enter drop location' },
+        { name: 'cropType', label: 'Crop Type', type: 'text', placeholder: 'Type of crop' },
+        { name: 'quantity', label: 'Quantity (kg)', type: 'number', placeholder: 'Enter quantity in kg' },
+        { name: 'preferredDate', label: 'Preferred Date', type: 'date' },
+      ],
+    },
+    {
+      id: 'coldStorage',
+      title: 'Cold Storage Access',
+      description: 'Request access to cold storage facilities for your produce.',
+      locationLink: 'https://www.google.com/maps/search/cold+storage+near+me/',
+      fields: [
+        { name: 'name', label: 'Full Name', type: 'text', placeholder: 'Enter your full name' },
+        { name: 'phone', label: 'Phone Number', type: 'tel', placeholder: 'Enter your phone number' },
+        { name: 'produceType', label: 'Produce Type', type: 'text', placeholder: 'Type of produce' },
+        { name: 'quantity', label: 'Quantity (kg)', type: 'number', placeholder: 'Enter quantity in kg' },
+        { name: 'storageDuration', label: 'Storage Duration (days)', type: 'number', placeholder: 'Number of days' },
+        { name: 'preferredStartDate', label: 'Preferred Start Date', type: 'date' },
+      ],
+    },
+    {
+      id: 'coldChain',
+      title: 'Cold Chain Supply',
+      description: 'Get support for cold chain logistics for perishable goods.',
+      locationLink: 'https://www.google.com/maps/search/cold+chain+logistics+near+me/',
+      fields: [
+        { name: 'name', label: 'Full Name', type: 'text', placeholder: 'Enter your full name' },
+        { name: 'phone', label: 'Phone Number', type: 'tel', placeholder: 'Enter your phone number' },
+        { name: 'produceType', label: 'Produce Type', type: 'text', placeholder: 'Type of produce' },
+        { name: 'quantity', label: 'Quantity (kg)', type: 'number', placeholder: 'Enter quantity in kg' },
+        { name: 'origin', label: 'Origin Location', type: 'text', placeholder: 'Enter origin location' },
+        { name: 'destination', label: 'Destination Location', type: 'text', placeholder: 'Enter destination location' },
+        { name: 'preferredDate', label: 'Preferred Date', type: 'date' },
+      ],
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-yellow-50 pt-20">
       {/* Page Introduction */}
@@ -678,73 +806,85 @@ const Planning = () => {
         <h2 className="text-2xl font-semibold text-gray-800 text-center mb-8">What We Offer</h2>
 
         {/* Water Management - Sprinkler */}
-        <div className="mb-12">
+        <div className="mb-10">
           <div className="flex flex-col md:flex-row gap-6 items-center">
-            <div className="w-full md:w-1/2">
-              <h3 className="text-xl font-semibold text-gray-800 mb-3">Modern Irrigation Systems</h3>
-              <p className="text-base text-gray-700">
+            <div className="w-full md:w-1/2 bg-green-50 rounded-xl p-8 shadow-sm mb-2">
+              <h3 className="text-xl font-bold text-green-700 mb-3 flex items-center gap-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-green-400 mr-1"></span>Modern Irrigation Systems
+              </h3>
+              <p className="text-base text-gray-700 leading-relaxed">
                 Sprinkler irrigation systems offer efficient water distribution across your fields. 
                 They help conserve water while ensuring uniform coverage, reducing water wastage and labor costs.
               </p>
             </div>
-            <div className="w-full md:w-1/3 h-32 md:h-40 relative group">
-              <video
-                className="w-full h-full object-cover rounded-lg shadow-lg transition-transform duration-300 group-hover:scale-105"
-                autoPlay
-                loop
-                muted
-                playsInline
-              >
-                <source src={sprinklerVideo} type="video/mp4" />
-              </video>
+            <div className="w-full md:w-1/3 flex items-center justify-center">
+              <div className="aspect-square w-48 md:w-64 relative group flex items-center justify-center">
+                <video
+                  className="w-full h-full object-cover rounded-lg border-2 border-green-100 shadow-md transition-transform duration-300 group-hover:scale-105"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                >
+                  <source src={sprinklerVideo} type="video/mp4" />
+                </video>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Water Management - Rainwater */}
-        <div className="mb-12">
-          <div className="flex flex-col md:flex-row-reverse gap-6 items-center">
-            <div className="w-full md:w-1/2">
-              <h3 className="text-xl font-semibold text-gray-800 mb-3">Rainwater Harvesting</h3>
-              <p className="text-base text-gray-700">
+        <div className="mb-10">
+          <div className="flex flex-col md:flex-row-reverse gap-4 items-center">
+            <div className="w-full md:w-1/2 bg-green-50 rounded-xl p-6 shadow-sm mb-2">
+              <h3 className="text-lg font-bold text-green-700 mb-2 flex items-center gap-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-green-400 mr-1"></span>Rainwater Harvesting
+              </h3>
+              <p className="text-sm text-gray-700 leading-relaxed">
                 Rainwater harvesting systems help farmers store and utilize rainwater effectively. 
                 This sustainable practice reduces dependency on groundwater and helps combat water scarcity.
               </p>
             </div>
-            <div className="w-full md:w-1/3 h-32 md:h-40 relative group">
-              <video
-                className="w-full h-full object-cover rounded-lg shadow-lg transition-transform duration-300 group-hover:scale-105"
-                autoPlay
-                loop
-                muted
-                playsInline
-              >
-                <source src={rainwaterVideo} type="video/mp4" />
-              </video>
+            <div className="w-full md:w-1/3 flex items-center justify-center">
+              <div className="aspect-square w-48 md:w-64 relative group flex items-center justify-center">
+                <video
+                  className="w-full h-full object-cover rounded-lg border-2 border-green-100 shadow-md transition-transform duration-300 group-hover:scale-105"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                >
+                  <source src={rainwaterVideo} type="video/mp4" />
+                </video>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Water Management - Pipe */}
-        <div className="mb-12">
-          <div className="flex flex-col md:flex-row gap-6 items-center">
-            <div className="w-full md:w-1/2">
-              <h3 className="text-xl font-semibold text-gray-800 mb-3">Efficient Water Distribution</h3>
-              <p className="text-base text-gray-700">
+        <div className="mb-10">
+          <div className="flex flex-col md:flex-row gap-4 items-center">
+            <div className="w-full md:w-1/2 bg-green-50 rounded-xl p-6 shadow-sm mb-2">
+              <h3 className="text-lg font-bold text-green-700 mb-2 flex items-center gap-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-green-400 mr-1"></span>Efficient Water Distribution
+              </h3>
+              <p className="text-sm text-gray-700 leading-relaxed">
                 Modern pipe irrigation systems ensure precise water delivery to crops. 
                 They minimize water loss through evaporation and provide better control over water distribution.
               </p>
             </div>
-            <div className="w-full md:w-1/3 h-32 md:h-40 relative group">
-              <video
-                className="w-full h-full object-cover rounded-lg shadow-lg transition-transform duration-300 group-hover:scale-105"
-                autoPlay
-                loop
-                muted
-                playsInline
-              >
-                <source src={pipeVideo} type="video/mp4" />
-              </video>
+            <div className="w-full md:w-1/3 flex items-center justify-center">
+              <div className="aspect-square w-48 md:w-64 relative group flex items-center justify-center">
+                <video
+                  className="w-full h-full object-cover rounded-lg border-2 border-green-100 shadow-md transition-transform duration-300 group-hover:scale-105"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                >
+                  <source src={pipeVideo} type="video/mp4" />
+                </video>
+              </div>
             </div>
           </div>
         </div>
@@ -759,13 +899,15 @@ const Planning = () => {
                 we provide durable and cost-effective protection for your agricultural land.
               </p>
             </div>
-            <div className="w-full md:w-1/3 h-32 md:h-40 relative group">
-              <img
-                src={fencingImage}
-                alt="Farm Fencing"
-                style={{ objectPosition: imagePositions.fencing.objectPosition }}
-                className="w-full h-full object-cover rounded-lg shadow-lg transition-transform duration-300 group-hover:scale-105"
-              />
+            <div className="w-full md:w-1/3 flex items-center justify-center">
+              <div className="aspect-square w-48 md:w-64 relative group flex items-center justify-center">
+                <img
+                  src={fencingImage}
+                  alt="Farm Fencing"
+                  style={{ objectPosition: imagePositions.fencing.objectPosition }}
+                  className="w-full h-full object-cover rounded-lg shadow-lg transition-transform duration-300 group-hover:scale-105"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -780,13 +922,15 @@ const Planning = () => {
                 we ensure your farm operations run smoothly with consistent power supply.
               </p>
             </div>
-            <div className="w-full md:w-1/3 h-32 md:h-40 relative group">
-              <img
-                src={elecImage}
-                alt="Electricity Setup"
-                style={{ objectPosition: imagePositions.elec.objectPosition }}
-                className="w-full h-full object-cover rounded-lg shadow-lg transition-transform duration-300 group-hover:scale-105"
-              />
+            <div className="w-full md:w-1/3 flex items-center justify-center">
+              <div className="aspect-square w-48 md:w-64 relative group flex items-center justify-center">
+                <img
+                  src={elecImage}
+                  alt="Electricity Setup"
+                  style={{ objectPosition: imagePositions.elec.objectPosition }}
+                  className="w-full h-full object-cover rounded-lg shadow-lg transition-transform duration-300 group-hover:scale-105"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -801,13 +945,15 @@ const Planning = () => {
                 are designed to protect your assets from weather and pests.
               </p>
             </div>
-            <div className="w-full md:w-1/3 h-32 md:h-40 relative group">
-              <img
-                src={shedImage}
-                alt="Storage Sheds"
-                style={{ objectPosition: imagePositions.shed.objectPosition }}
-                className="w-full h-full object-cover rounded-lg shadow-lg transition-transform duration-300 group-hover:scale-105"
-              />
+            <div className="w-full md:w-1/3 flex items-center justify-center">
+              <div className="aspect-square w-48 md:w-64 relative group flex items-center justify-center">
+                <img
+                  src={shedImage}
+                  alt="Storage Sheds"
+                  style={{ objectPosition: imagePositions.shed.objectPosition }}
+                  className="w-full h-full object-cover rounded-lg shadow-lg transition-transform duration-300 group-hover:scale-105"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -822,16 +968,18 @@ const Planning = () => {
                 and contribute to a greener environment with our solar installations.
               </p>
             </div>
-            <div className="w-full md:w-1/3 h-32 md:h-40 relative group">
-              <video
-                className="w-full h-full object-cover rounded-lg shadow-lg transition-transform duration-300 group-hover:scale-105"
-                autoPlay
-                loop
-                muted
-                playsInline
-              >
-                <source src={solarVideo} type="video/mp4" />
-              </video>
+            <div className="w-full md:w-1/3 flex items-center justify-center">
+              <div className="aspect-square w-48 md:w-64 relative group flex items-center justify-center">
+                <video
+                  className="w-full h-full object-cover rounded-lg shadow-lg transition-transform duration-300 group-hover:scale-105"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                >
+                  <source src={solarVideo} type="video/mp4" />
+                </video>
+              </div>
             </div>
           </div>
         </div>
@@ -846,13 +994,15 @@ const Planning = () => {
                 professionals for all your farming and infrastructure needs.
               </p>
             </div>
-            <div className="w-full md:w-1/3 h-32 md:h-40 relative group">
-              <img
-                src={labourImage}
-                alt="Skilled Labor"
-                style={{ objectPosition: imagePositions.labour.objectPosition }}
-                className="w-full h-full object-cover rounded-lg shadow-lg transition-transform duration-300 group-hover:scale-105"
-              />
+            <div className="w-full md:w-1/3 flex items-center justify-center">
+              <div className="aspect-square w-48 md:w-64 relative group flex items-center justify-center">
+                <img
+                  src={labourImage}
+                  alt="Skilled Labor"
+                  style={{ objectPosition: imagePositions.labour.objectPosition }}
+                  className="w-full h-full object-cover rounded-lg shadow-lg transition-transform duration-300 group-hover:scale-105"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -861,7 +1011,7 @@ const Planning = () => {
       {/* Water Services Section */}
       <div className="w-full px-4 mb-16">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Water-Related Services</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
           {waterServices.map((service, idx) => (
             <ServiceCard
               key={service.id}
@@ -871,7 +1021,7 @@ const Planning = () => {
             >
               <button
                 onClick={() => setActiveForm(service.id)}
-                className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors duration-300"
+                className="w-full bg-gradient-to-r from-green-500 to-lime-400 text-white py-2 px-4 rounded-lg shadow hover:from-green-600 hover:to-lime-500 transition-all duration-200 font-semibold text-sm mt-2"
               >
                 Request Service
               </button>
@@ -883,7 +1033,7 @@ const Planning = () => {
       {/* Electricity Services Section */}
       <div className="w-full px-4 mb-16">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Electricity-Related Services</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
           {electricityServices.map((service, idx) => (
             <ServiceCard
               key={service.id}
@@ -893,7 +1043,7 @@ const Planning = () => {
             >
               <button
                 onClick={() => setActiveForm(service.id)}
-                className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+                className="w-full bg-gradient-to-r from-green-500 to-lime-400 text-white py-2 px-4 rounded-lg shadow hover:from-green-600 hover:to-lime-500 transition-all duration-200 font-semibold text-sm mt-2"
               >
                 Request Service
               </button>
@@ -905,7 +1055,7 @@ const Planning = () => {
       {/* Land and Physical Infrastructure Services Section */}
       <div className="w-full px-4 mb-16">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Land and Physical Infrastructure Services</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
           {infrastructureServices.map((service, idx) => (
             <ServiceCard
               key={service.id}
@@ -915,7 +1065,7 @@ const Planning = () => {
             >
               <button
                 onClick={() => setActiveForm(service.id)}
-                className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+                className="w-full bg-gradient-to-r from-green-500 to-lime-400 text-white py-2 px-4 rounded-lg shadow hover:from-green-600 hover:to-lime-500 transition-all duration-200 font-semibold text-sm mt-2"
               >
                 Request Service
               </button>
@@ -927,7 +1077,7 @@ const Planning = () => {
       {/* Labor Services Section */}
       <div className="w-full px-4 mb-16">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Labor & Physical Work Assistance</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
           {laborServices.map((service, idx) => (
             <ServiceCard
               key={service.id}
@@ -937,7 +1087,29 @@ const Planning = () => {
             >
               <button
                 onClick={() => setActiveForm(service.id)}
-                className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+                className="w-full bg-gradient-to-r from-green-500 to-lime-400 text-white py-2 px-4 rounded-lg shadow hover:from-green-600 hover:to-lime-500 transition-all duration-200 font-semibold text-sm mt-2"
+              >
+                Request Service
+              </button>
+            </ServiceCard>
+          ))}
+        </div>
+      </div>
+
+      {/* Transportation and Logistics Section */}
+      <div className="w-full px-4 mb-16">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">Transportation and Logistics</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
+          {transportationServices.map((service, idx) => (
+            <ServiceCard
+              key={service.id}
+              title={service.title}
+              description={service.description}
+              locationLink={service.locationLink}
+            >
+              <button
+                onClick={() => setActiveForm(service.id)}
+                className="w-full bg-gradient-to-r from-green-500 to-lime-400 text-white py-2 px-4 rounded-lg shadow hover:from-green-600 hover:to-lime-500 transition-all duration-200 font-semibold text-sm mt-2"
               >
                 Request Service
               </button>
@@ -952,7 +1124,7 @@ const Planning = () => {
           key={service.id}
           isOpen={activeForm === service.id}
           onClose={() => setActiveForm(null)}
-          fields={service.fields}
+          serviceTitle={service.title}
           onSubmit={(data) => console.log(data)}
         />
       ))}
@@ -961,7 +1133,7 @@ const Planning = () => {
           key={service.id}
           isOpen={activeForm === service.id}
           onClose={() => setActiveForm(null)}
-          fields={service.fields}
+          serviceTitle={service.title}
           onSubmit={(data) => console.log(data)}
         />
       ))}
@@ -970,7 +1142,7 @@ const Planning = () => {
           key={service.id}
           isOpen={activeForm === service.id}
           onClose={() => setActiveForm(null)}
-          fields={service.fields}
+          serviceTitle={service.title}
           onSubmit={(data) => console.log(data)}
         />
       ))}
@@ -979,7 +1151,16 @@ const Planning = () => {
           key={service.id}
           isOpen={activeForm === service.id}
           onClose={() => setActiveForm(null)}
-          fields={service.fields}
+          serviceTitle={service.title}
+          onSubmit={(data) => console.log(data)}
+        />
+      ))}
+      {transportationServices.map((service) => (
+        <RequestForm
+          key={service.id}
+          isOpen={activeForm === service.id}
+          onClose={() => setActiveForm(null)}
+          serviceTitle={service.title}
           onSubmit={(data) => console.log(data)}
         />
       ))}
