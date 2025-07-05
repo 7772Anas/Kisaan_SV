@@ -1,6 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
+import { 
+  Search, 
+  MapPin, 
+  Thermometer, 
+  Droplets, 
+  Wind, 
+  Sun, 
+  Cloud, 
+  CloudRain, 
+  CloudSnow, 
+ 
+  Sunrise, 
+  Sunset,
+  Calendar,
+  Clock,
+  RefreshCw,
+  AlertCircle,
+  TrendingUp,
+  AirVent,
+  Gauge,
+  
+  CloudFog,
+  CloudLightning
+} from 'lucide-react';
 
 function ClimateConnect() {
   // State variables
@@ -17,6 +40,12 @@ function ClimateConnect() {
     const savedCities = localStorage.getItem('recentCities');
     return savedCities ? JSON.parse(savedCities) : [];
   });
+  const [isVisible, setIsVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState('forecast');
+
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
 
   // Save to localStorage whenever weatherData or recentCities changes
   useEffect(() => {
@@ -114,21 +143,57 @@ function ClimateConnect() {
     const aqi = data.current.air_quality;
     if (!aqi) return null;
 
+    const getAQIColor = (value, type) => {
+      if (type === 'co') {
+        if (value < 2) return 'text-green-400';
+        if (value < 4) return 'text-yellow-400';
+        return 'text-red-400';
+      }
+      if (type === 'pm2_5') {
+        if (value < 12) return 'text-green-400';
+        if (value < 35) return 'text-yellow-400';
+        return 'text-red-400';
+      }
+      if (type === 'o3') {
+        if (value < 54) return 'text-green-400';
+        if (value < 70) return 'text-yellow-400';
+        return 'text-red-400';
+      }
+      return 'text-gray-400';
+    };
+
     return (
-      <div className="bg-gray-800 rounded-lg p-4 mt-4">
-        <h3 className="text-xl font-semibold mb-3">Air Quality Index</h3>
+      <div className={`bg-white/10 backdrop-blur-sm rounded-2xl p-6 mt-6 border border-white/20 transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
+            <AirVent className="w-6 h-6 text-white" />
+          </div>
+          <h3 className="text-2xl font-bold text-white">Air Quality Index</h3>
+        </div>
         <div className="grid grid-cols-3 gap-4">
-          <div className="bg-gray-700 rounded-lg p-3">
-            <p className="text-sm text-gray-400">CO</p>
-            <p className="text-lg font-semibold">{aqi.co.toFixed(1)}</p>
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:-translate-y-1">
+            <div className="flex items-center gap-2 mb-2">
+              <Cloud className="w-4 h-4 text-blue-400" />
+              <p className="text-sm text-gray-300">CO</p>
+            </div>
+            <p className={`text-2xl font-bold ${getAQIColor(aqi.co, 'co')}`}>{aqi.co.toFixed(1)}</p>
+            <p className="text-xs text-gray-400 mt-1">Carbon Monoxide</p>
           </div>
-          <div className="bg-gray-700 rounded-lg p-3">
-            <p className="text-sm text-gray-400">PM2.5</p>
-            <p className="text-lg font-semibold">{aqi.pm2_5.toFixed(1)}</p>
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:-translate-y-1">
+            <div className="flex items-center gap-2 mb-2">
+              <Droplets className="w-4 h-4 text-blue-400" />
+              <p className="text-sm text-gray-300">PM2.5</p>
+            </div>
+            <p className={`text-2xl font-bold ${getAQIColor(aqi.pm2_5, 'pm2_5')}`}>{aqi.pm2_5.toFixed(1)}</p>
+            <p className="text-xs text-gray-400 mt-1">Fine Particles</p>
           </div>
-          <div className="bg-gray-700 rounded-lg p-3">
-            <p className="text-sm text-gray-400">O3</p>
-            <p className="text-lg font-semibold">{aqi.o3.toFixed(1)}</p>
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:-translate-y-1">
+            <div className="flex items-center gap-2 mb-2">
+              <Sun className="w-4 h-4 text-blue-400" />
+              <p className="text-sm text-gray-300">O3</p>
+            </div>
+            <p className={`text-2xl font-bold ${getAQIColor(aqi.o3, 'o3')}`}>{aqi.o3.toFixed(1)}</p>
+            <p className="text-xs text-gray-400 mt-1">Ozone</p>
           </div>
         </div>
       </div>
@@ -146,8 +211,13 @@ function ClimateConnect() {
     }));
 
     return (
-      <div className="w-full bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl shadow-lg p-6">
-        <h3 className="text-xl font-semibold mb-6 text-gray-100">7-Day Rain Forecast</h3>
+      <div className={`w-full bg-white/10 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-white/20 transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl">
+            <TrendingUp className="w-6 h-6 text-white" />
+          </div>
+          <h3 className="text-2xl font-bold text-white">7-Day Rain Forecast</h3>
+        </div>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
@@ -159,41 +229,43 @@ function ClimateConnect() {
                 bottom: 5,
               }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
               <XAxis 
                 dataKey="day" 
-                stroke="#9CA3AF"
-                tick={{ fill: '#9CA3AF' }}
+                stroke="rgba(255,255,255,0.7)"
+                tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }}
               />
               <YAxis 
-                stroke="#9CA3AF"
-                tick={{ fill: '#9CA3AF' }}
+                stroke="rgba(255,255,255,0.7)"
+                tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }}
                 domain={[0, 100]}
                 unit="%"
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#1F2937',
-                  border: 'none',
-                  borderRadius: '0.5rem',
-                  color: '#F3F4F6'
+                  backgroundColor: 'rgba(0,0,0,0.8)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '0.75rem',
+                  color: '#ffffff',
+                  backdropFilter: 'blur(10px)'
                 }}
-                labelStyle={{ color: '#9CA3AF' }}
+                labelStyle={{ color: 'rgba(255,255,255,0.8)' }}
               />
               <Bar
                 dataKey="rainChance"
                 fill="url(#rainGradient)"
-                radius={[4, 4, 0, 0]}
-                animationDuration={1500}
+                radius={[8, 8, 0, 0]}
+                animationDuration={2000}
               >
                 {chartData.map((entry, index) => (
                   <text
                     key={`label-${index}`}
                     x={index * (100 / chartData.length) + (100 / chartData.length / 2)}
                     y={entry.rainChance - 10}
-                    fill="#60A5FA"
+                    fill="#22c55e"
                     textAnchor="middle"
                     fontSize={12}
+                    fontWeight="bold"
                   >
                     {entry.rainChance}%
                   </text>
@@ -201,8 +273,8 @@ function ClimateConnect() {
               </Bar>
               <defs>
                 <linearGradient id="rainGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#60A5FA" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.8}/>
+                  <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#16a34a" stopOpacity={0.8}/>
                 </linearGradient>
               </defs>
             </BarChart>
@@ -217,19 +289,23 @@ function ClimateConnect() {
     if (!astroData) return null;
 
     return (
-      <div className="flex justify-between items-center mt-4 p-4 bg-gray-700/50 rounded-lg">
-        <div className="flex items-center space-x-2">
-          <span className="text-2xl">🌅</span>
+      <div className={`flex justify-between items-center mt-6 p-6 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg">
+            <Sunrise className="w-5 h-5 text-white" />
+          </div>
           <div>
-            <p className="text-sm text-gray-400">Sunrise</p>
-            <p className="font-medium">{astroData.sunrise}</p>
+            <p className="text-sm text-gray-300">Sunrise</p>
+            <p className="font-semibold text-white">{astroData.sunrise}</p>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <span className="text-2xl">🌇</span>
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg">
+            <Sunset className="w-5 h-5 text-white" />
+          </div>
           <div>
-            <p className="text-sm text-gray-400">Sunset</p>
-            <p className="font-medium">{astroData.sunset}</p>
+            <p className="text-sm text-gray-300">Sunset</p>
+            <p className="font-semibold text-white">{astroData.sunset}</p>
           </div>
         </div>
       </div>
@@ -241,159 +317,209 @@ function ClimateConnect() {
     const conditionText = condition?.toLowerCase() || '';
     
     if (conditionText.includes('sunny') || conditionText.includes('clear')) {
-      return '☀️';
+      return <Sun className="w-16 h-16 text-yellow-400" />;
     } else if (conditionText.includes('cloud')) {
-      return '☁️';
+      return <Cloud className="w-16 h-16 text-gray-400" />;
     } else if (conditionText.includes('rain')) {
-      return '🌧️';
+      return <CloudRain className="w-16 h-16 text-blue-400" />;
     } else if (conditionText.includes('snow')) {
-      return '❄️';
+      return <CloudSnow className="w-16 h-16 text-blue-200" />;
     } else if (conditionText.includes('thunder')) {
-      return '⛈️';
+      return <CloudLightning className="w-16 h-16 text-yellow-400" />;
     } else if (conditionText.includes('mist') || conditionText.includes('fog')) {
-      return '🌫️';
+      return <CloudFog className="w-16 h-16 text-gray-300" />;
     } else {
-      return '🌤️';
+      return <Cloud className="w-16 h-16 text-gray-400" />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-6 pt-16">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8 p-4 bg-gray-800/50 backdrop-blur-sm rounded-lg shadow-lg">
-        {/* Left section: Location and Search */}
-        <div className="flex items-center flex-grow">
-          <span className="text-xl mr-4 font-semibold">
-            📍 {weatherData ? `${weatherData.location.name}, ${weatherData.location.country}` : 'Search for a city...'}
-          </span>
-          <form onSubmit={fetchWeatherData} className="relative flex-grow max-w-sm">
-            <input
-              type="text"
-              placeholder="Search city..."
-              value={city}
-              onChange={handleInputChange}
-              className="bg-gray-700 text-white rounded-full py-2 px-5 pl-10 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
-            />
-            <button
-              type="submit"
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                ></path>
-              </svg>
-            </button>
-          </form>
-        </div>
-
-        {/* Right section: Forecast/Air Quality toggle */}
-        <div className="flex items-center space-x-3">
-          <button className="bg-blue-600 text-white rounded-full px-5 py-2 text-base font-medium hover:bg-blue-700 transition-colors">Forecast</button>
-          <button className="text-gray-400 px-5 py-2 text-base font-medium hover:text-white transition-colors">Air quality</button>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white p-6 pt-20 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-500/10 to-transparent rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-green-500/10 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-blue-500/5 to-green-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }} />
       </div>
 
-      {/* Loading and Error States */}
-      {isLoading && (
-        <div className="text-center py-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
-          <p className="mt-2 text-gray-400">Loading weather data...</p>
-        </div>
-      )}
-
-      {error && (
-        <div className="bg-red-500/20 border border-red-500 rounded-lg p-4 mb-6">
-          <p className="text-red-400">{error}</p>
-        </div>
-      )}
-
-      {/* Weather details section */}
-      <div className="flex flex-col lg:flex-row gap-6 mb-6">
-        {/* Left column: Today's forecast card */}
-        <div className="w-full lg:w-1/3 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg shadow-lg p-4">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-lg font-semibold">
-              {weatherData ? new Date(weatherData.location.localtime).toLocaleDateString('en-US', { weekday: 'long' }) : 'Today'}
-            </h3>
-          </div>
-          <div className="text-center py-4">
-            <div className="text-8xl mb-4">
-              {getWeatherIcon(weatherData ? weatherData.current.condition.text : defaultWeatherData.current.condition.text)}
+      <div className="relative z-10">
+        {/* Header */}
+        <div className={`flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8 p-6 bg-white/10 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          {/* Left section: Location and Search */}
+          <div className="flex items-center flex-grow gap-4">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-6 h-6 text-green-400" />
+              <span className="text-xl font-semibold text-white">
+                {weatherData ? `${weatherData.location.name}, ${weatherData.location.country}` : 'Search for a city...'}
+              </span>
             </div>
-            <h2 className="text-4xl font-bold mt-2">
-              {weatherData ? `${weatherData.current.temp_c}°C` : `${defaultWeatherData.current.temp_c}°C`}
-            </h2>
-            <p className="text-gray-400">
-              {weatherData ? weatherData.current.condition.text : defaultWeatherData.current.condition.text}
+            <form onSubmit={fetchWeatherData} className="relative flex-grow max-w-sm">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search city..."
+                  value={city}
+                  onChange={handleInputChange}
+                  className="bg-white/10 backdrop-blur-sm text-white rounded-full py-3 px-5 pl-10 w-full focus:outline-none focus:ring-2 focus:ring-green-500 focus:bg-white/20 transition-all duration-300 text-base border border-white/20"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-green-400 transition-colors"
+                >
+                  <Search className="w-5 h-5" />
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Right section: Forecast/Air Quality toggle */}
+          <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full p-1 border border-white/20">
+            <button 
+              onClick={() => setActiveTab('forecast')}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                activeTab === 'forecast' 
+                  ? 'bg-green-500 text-white shadow-lg' 
+                  : 'text-gray-300 hover:text-white'
+              }`}
+            >
+              <TrendingUp className="w-4 h-4 inline mr-2" />
+              Forecast
+            </button>
+            <button 
+              onClick={() => setActiveTab('air')}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                activeTab === 'air' 
+                  ? 'bg-green-500 text-white shadow-lg' 
+                  : 'text-gray-300 hover:text-white'
+              }`}
+            >
+              <AirVent className="w-4 h-4 inline mr-2" />
+              Air Quality
+            </button>
+          </div>
+        </div>
+
+        {/* Loading and Error States */}
+        {isLoading && (
+          <div className={`text-center py-8 transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
+            <p className="mt-4 text-gray-300 flex items-center justify-center gap-2">
+              <RefreshCw className="w-5 h-5 animate-spin" />
+              Loading weather data...
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <div className="bg-gray-700/50 rounded-lg p-3">
-              <p className="text-sm text-gray-400">Feels Like</p>
-              <p className="text-lg font-semibold">
-                {weatherData ? `${weatherData.current.feelslike_c}°C` : `${defaultWeatherData.current.feelslike_c}°C`}
-              </p>
-            </div>
-            <div className="bg-gray-700/50 rounded-lg p-3">
-              <p className="text-sm text-gray-400">Humidity</p>
-              <p className="text-lg font-semibold">
-                {weatherData ? `${weatherData.current.humidity}%` : `${defaultWeatherData.current.humidity}%`}
-              </p>
-            </div>
-            <div className="bg-gray-700/50 rounded-lg p-3">
-              <p className="text-sm text-gray-400">Wind</p>
-              <p className="text-lg font-semibold">
-                {weatherData ? `${weatherData.current.wind_kph} km/h` : `${defaultWeatherData.current.wind_kph} km/h`}
-              </p>
-            </div>
-            <div className="bg-gray-700/50 rounded-lg p-3">
-              <p className="text-sm text-gray-400">UV Index</p>
-              <p className="text-lg font-semibold">
-                {weatherData ? weatherData.current.uv : defaultWeatherData.current.uv}
-              </p>
+        )}
+
+        {error && (
+          <div className={`bg-red-500/20 border border-red-500/50 rounded-xl p-4 mb-6 backdrop-blur-sm transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-red-400" />
+              <p className="text-red-300">{error}</p>
             </div>
           </div>
-          <SunriseSunset astroData={weatherData ? weatherData.forecast.forecastday[0].astro : defaultWeatherData.forecast.forecastday[0].astro} />
-        </div>
+        )}
 
-        {/* Right column: 7-day forecast and air quality */}
-        <div className="w-full lg:w-2/3">
-          <RainChanceGraph forecastData={weatherData ? weatherData.forecast.forecastday : defaultWeatherData.forecast.forecastday} />
-          <AirQualityIndex data={weatherData || defaultWeatherData} />
-        </div>
-      </div>
-
-      {/* Recent searches */}
-      {recentCities.length > 0 && (
-        <div className="mt-8">
-          <h3 className="text-xl font-semibold mb-4">Recent Searches</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {recentCities.map((city, index) => (
-              <div
-                key={index}
-                className="bg-gray-800/50 rounded-lg p-4 cursor-pointer hover:bg-gray-800/70 transition-colors"
-                onClick={() => {
-                  setCity(city.name);
-                  fetchWeatherData({ preventDefault: () => {} });
-                }}
-              >
-                <h4 className="font-medium">{city.name}</h4>
-                <p className="text-sm text-gray-400">{city.country}</p>
+        {/* Weather details section */}
+        <div className="flex flex-col lg:flex-row gap-6 mb-6">
+          {/* Left column: Today's forecast card */}
+          <div className={`w-full lg:w-1/3 bg-white/10 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-white/20 transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-white">
+                {weatherData ? new Date(weatherData.location.localtime).toLocaleDateString('en-US', { weekday: 'long' }) : 'Today'}
+              </h3>
+              <Calendar className="w-5 h-5 text-gray-400" />
+            </div>
+            <div className="text-center py-6">
+              <div className="mb-6 transform hover:scale-110 transition-transform duration-300">
+                {getWeatherIcon(weatherData ? weatherData.current.condition.text : defaultWeatherData.current.condition.text)}
               </div>
-            ))}
+              <h2 className="text-5xl font-bold mb-2 text-white">
+                {weatherData ? `${weatherData.current.temp_c}°C` : `${defaultWeatherData.current.temp_c}°C`}
+              </h2>
+              <p className="text-gray-300 text-lg">
+                {weatherData ? weatherData.current.condition.text : defaultWeatherData.current.condition.text}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4 mt-6">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:-translate-y-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <Thermometer className="w-4 h-4 text-red-400" />
+                  <p className="text-sm text-gray-300">Feels Like</p>
+                </div>
+                <p className="text-lg font-semibold text-white">
+                  {weatherData ? `${weatherData.current.feelslike_c}°C` : `${defaultWeatherData.current.feelslike_c}°C`}
+                </p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:-translate-y-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <Droplets className="w-4 h-4 text-blue-400" />
+                  <p className="text-sm text-gray-300">Humidity</p>
+                </div>
+                <p className="text-lg font-semibold text-white">
+                  {weatherData ? `${weatherData.current.humidity}%` : `${defaultWeatherData.current.humidity}%`}
+                </p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:-translate-y-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <Wind className="w-4 h-4 text-gray-400" />
+                  <p className="text-sm text-gray-300">Wind</p>
+                </div>
+                <p className="text-lg font-semibold text-white">
+                  {weatherData ? `${weatherData.current.wind_kph} km/h` : `${defaultWeatherData.current.wind_kph} km/h`}
+                </p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:-translate-y-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <Gauge className="w-4 h-4 text-purple-400" />
+                  <p className="text-sm text-gray-300">UV Index</p>
+                </div>
+                <p className="text-lg font-semibold text-white">
+                  {weatherData ? weatherData.current.uv : defaultWeatherData.current.uv}
+                </p>
+              </div>
+            </div>
+            <SunriseSunset astroData={weatherData ? weatherData.forecast.forecastday[0].astro : defaultWeatherData.forecast.forecastday[0].astro} />
+          </div>
+
+          {/* Right column: 7-day forecast and air quality */}
+          <div className="w-full lg:w-2/3">
+            {activeTab === 'forecast' ? (
+              <RainChanceGraph forecastData={weatherData ? weatherData.forecast.forecastday : defaultWeatherData.forecast.forecastday} />
+            ) : (
+              <AirQualityIndex data={weatherData || defaultWeatherData} />
+            )}
           </div>
         </div>
-      )}
+
+        {/* Recent searches */}
+        {recentCities.length > 0 && (
+          <div className={`mt-8 transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <div className="flex items-center gap-3 mb-6">
+              <Clock className="w-6 h-6 text-green-400" />
+              <h3 className="text-2xl font-bold text-white">Recent Searches</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {recentCities.map((city, index) => (
+                <div
+                  key={index}
+                  className="bg-white/10 backdrop-blur-sm rounded-xl p-4 cursor-pointer hover:bg-white/20 transition-all duration-300 transform hover:-translate-y-1 border border-white/20"
+                  onClick={() => {
+                    setCity(city.name);
+                    fetchWeatherData({ preventDefault: () => {} });
+                  }}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <MapPin className="w-4 h-4 text-green-400" />
+                    <h4 className="font-semibold text-white">{city.name}</h4>
+                  </div>
+                  <p className="text-sm text-gray-300">{city.country}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

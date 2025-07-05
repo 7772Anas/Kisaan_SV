@@ -11,6 +11,7 @@ const SoilTesting = () => {
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     landSize: '',
+    landUnit: 'acre',
     crop: '',
     fromDate: '',
     toDate: '',
@@ -52,9 +53,43 @@ const SoilTesting = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setSuccess(false);
+    setError('');
+    // Get logged-in user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setError('Please log in as a farmer to request soil testing.');
+      return;
+    }
+    // Insert into soil_table
+    const { error: insertError } = await supabase
+      .from('soil_table')
+      .insert([
+        {
+          farmer_id: user.id,
+          land_size: formData.landSize,
+          land_unit: formData.landUnit,
+          crop: formData.crop,
+          from_date: formData.fromDate,
+          to_date: formData.toDate,
+          description: formData.description,
+        },
+      ]);
+    if (insertError) {
+      setError('Failed to submit request. Please try again.');
+      return;
+    }
     setSuccess(true);
+    setFormData({
+      landSize: '',
+      landUnit: 'acre',
+      crop: '',
+      fromDate: '',
+      toDate: '',
+      description: '',
+    });
     setTimeout(() => setSuccess(false), 2000);
   };
 
@@ -163,9 +198,16 @@ const SoilTesting = () => {
                 <input type="text" value={profile.address} readOnly className="w-full bg-gray-100 rounded-lg px-4 py-2 text-gray-700 cursor-not-allowed" />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Land Size (acres/hectares)</label>
-                  <input type="number" name="landSize" value={formData.landSize} onChange={handleChange} className="w-full bg-green-50 rounded-lg px-4 py-2 text-gray-700 focus:ring-2 focus:ring-green-400" placeholder="e.g. 2.5" min="0" step="0.01" required />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Land Size</label>
+                  <div className="flex gap-2 items-center">
+                    <input type="number" name="landSize" value={formData.landSize} onChange={handleChange} className="w-full bg-green-50 rounded-lg px-4 py-2 text-gray-700 focus:ring-2 focus:ring-green-400" placeholder="e.g. 2.5" min="0" step="0.01" required />
+                    <select name="landUnit" value={formData.landUnit} onChange={handleChange} className="bg-green-50 rounded-lg px-2 py-2 text-gray-700 border border-green-200 focus:ring-2 focus:ring-green-400">
+                      <option value="hectare">Hectare</option>
+                      <option value="acre">Acre</option>
+                      <option value="gaz">Gaz</option>
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Current/Latest Crop Grown</label>

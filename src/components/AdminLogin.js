@@ -1,43 +1,77 @@
 import React, { useState } from 'react';
 import { supabase } from './supabaseClient';
+import { useNavigate } from 'react-router-dom';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
     setLoading(true);
     if (!email || !password) {
       setError('Please enter both email and password.');
       setLoading(false);
       return;
     }
-    // Fetch admin from Supabase
-    const { data, error: fetchError } = await supabase
-      .from('admins')
-      .select('*')
-      .eq('admin_email', email)
-      .single();
-    if (fetchError || !data) {
-      setError('Invalid email or password.');
-      alert('Invalid email or password.');
-      setLoading(false);
-      return;
+    
+    try {
+      // First, try to sign in with Supabase auth
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
+
+      if (authError) {
+        // If Supabase auth fails, check if it's an admin in the admins table
+        const { data: adminData, error: adminError } = await supabase
+          .from('admins')
+          .select('*')
+          .eq('admin_email', email)
+          .single();
+
+        if (adminError || !adminData) {
+          setError('Invalid email or password.');
+          setLoading(false);
+          return;
+        }
+
+        // Validate admin password
+        if (adminData.admin_password === password) {
+          // Create a session manually or store admin info in localStorage
+          localStorage.setItem('adminSession', JSON.stringify({
+            user: { id: adminData.id, email: adminData.admin_email },
+            isAdmin: true
+          }));
+          navigate('/AdminProfile');
+        } else {
+          setError('Invalid email or password.');
+        }
+      } else {
+        // Supabase auth successful, check if user is admin
+        const { data: adminData, error: adminError } = await supabase
+          .from('admins')
+          .select('*')
+          .eq('admin_email', email)
+          .single();
+
+        if (adminError || !adminData) {
+          // Not an admin, sign out
+          await supabase.auth.signOut();
+          setError('Access denied. Admin privileges required.');
+        } else {
+          // Admin confirmed, proceed
+          navigate('/AdminProfile');
+        }
+      }
+    } catch (err) {
+      setError('Login failed. Please try again.');
     }
-    // Validate password (plain text for now, hash in production)
-    if (data.admin_password === password) {
-      setSuccess('Login successful!');
-      alert('Login successful!');
-    } else {
-      setError('Invalid email or password.');
-      alert('Invalid email or password.');
-    }
+    
     setLoading(false);
   };
 
@@ -71,7 +105,6 @@ const AdminLogin = () => {
             />
           </div>
           {error && <div className="text-red-600 text-sm">{error}</div>}
-          {success && <div className="text-green-600 text-sm">{success}</div>}
           <button
             type="submit"
             className="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition"

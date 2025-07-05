@@ -1,6 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
+import { 
+  Menu, 
+  X, 
+  Home, 
+  Compass, 
+  TrendingUp, 
+  Cloud, 
+  DollarSign, 
+  UserCheck, 
+  TestTube, 
+  Wrench, 
+  Users, 
+  User, 
+  Shield, 
+  LogIn,
+  Building2,
+  Leaf,
+  Calculator,
+  MapPin,
+  ShoppingCart,
+  Settings
+} from 'lucide-react';
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -8,10 +30,85 @@ const Navbar = () => {
   const [profilePath, setProfilePath] = useState('/profile');
   const navigate = useNavigate();
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuOpen && !event.target.closest('.sidebar-container')) {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuOpen]);
+
+  // Close menu on escape key
+  useEffect(() => {
+    const handleEscape = (event) => {
+      if (event.key === 'Escape' && menuOpen) {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [menuOpen]);
+
+  const menuItems = [
+    {
+      title: "Information Hub",
+      icon: <Building2 className="w-5 h-5" />,
+      items: [
+        { label: "Market Prices", path: "/explore/market-hub", icon: <TrendingUp className="w-4 h-4" /> },
+        { label: "Weather", path: "/climateconnect", icon: <Cloud className="w-4 h-4" /> },
+        { label: "Schemes/Links", path: "/finance", icon: <DollarSign className="w-4 h-4" /> },
+        { label: "Agro Expert", path: "/agroexpert", icon: <UserCheck className="w-4 h-4" /> }
+      ]
+    },
+    {
+      title: "Farmer Tools",
+      icon: <Leaf className="w-5 h-5" />,
+      items: [
+        { label: "Budget Estimation", path: "/finance", icon: <Calculator className="w-4 h-4" /> },
+        { label: "Soil Testing", path: "/soiltesting", icon: <TestTube className="w-4 h-4" /> }
+      ]
+    },
+    {
+      title: "Services",
+      icon: <Wrench className="w-5 h-5" />,
+      items: [
+        { label: "Infrastructure Planning", path: "/planning", icon: <MapPin className="w-4 h-4" /> },
+        { label: "Direct Selling D2C", path: "/direct-to-selling", icon: <ShoppingCart className="w-4 h-4" />, disabled: false }
+      ]
+    },
+    {
+      title: "Profile",
+      icon: <Users className="w-5 h-5" />,
+      items: [
+        { label: "Admin", path: "/AdminLogin", icon: <Shield className="w-4 h-4" /> },
+        { label: "Farmer Login", path: "/FarmerLogin", icon: <User className="w-4 h-4" /> },
+        { label: "Buyer Login", path: "/BuyerLogin", icon: <User className="w-4 h-4" /> },
+        { label: "Service Provider Login", path: "/ServiceProviderLogin", icon: <Settings className="w-4 h-4" /> }
+      ]
+    }
+  ];
+
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
+      
+      // Check for admin session in localStorage as fallback
+      const adminSession = localStorage.getItem('adminSession');
+      if (adminSession) {
+        const adminData = JSON.parse(adminSession);
+        if (adminData.isAdmin) {
+          setUser(adminData.user);
+          setProfilePath('/AdminProfile');
+          return;
+        }
+      }
+      
       if (session?.user) {
         const userId = session.user.id;
         // Check farmers table
@@ -34,6 +131,16 @@ const Navbar = () => {
           setProfilePath('/BuyerProfile');
           return;
         }
+        // Check admins table
+        const { data: admin } = await supabase
+          .from('admins')
+          .select('id')
+          .eq('id', userId)
+          .single();
+        if (admin) {
+          setProfilePath('/AdminProfile');
+          return;
+        }
         // TODO: Add service provider check if needed
         setProfilePath('/profile');
       }
@@ -41,6 +148,18 @@ const Navbar = () => {
     getSession();
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
+      
+      // Check for admin session in localStorage as fallback
+      const adminSession = localStorage.getItem('adminSession');
+      if (adminSession) {
+        const adminData = JSON.parse(adminSession);
+        if (adminData.isAdmin) {
+          setUser(adminData.user);
+          setProfilePath('/AdminProfile');
+          return;
+        }
+      }
+      
       if (session?.user) {
         const userId = session.user.id;
         (async () => {
@@ -62,6 +181,15 @@ const Navbar = () => {
             setProfilePath('/BuyerProfile');
             return;
           }
+          const { data: admin } = await supabase
+            .from('admins')
+            .select('id')
+            .eq('id', userId)
+            .single();
+          if (admin) {
+            setProfilePath('/AdminProfile');
+            return;
+          }
           setProfilePath('/profile');
         })();
       }
@@ -77,64 +205,123 @@ const Navbar = () => {
         <div className="flex justify-between h-16 items-center">
           {/* Left: Hamburger + Logo */}
           <div className="flex items-center">
-            {/* Hamburger menu button - always visible, right before logo */}
+            {/* Enhanced Hamburger menu button */}
             <button
-              className="mr-2 focus:outline-none"
+              className="mr-3 p-2 rounded-lg hover:bg-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white/50"
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label="Open menu"
             >
-              <div className="w-7 h-7 flex flex-col justify-center items-center">
-                <span className="block w-7 h-1 bg-white mb-1 rounded"></span>
-                <span className="block w-7 h-1 bg-white mb-1 rounded"></span>
-                <span className="block w-7 h-1 bg-white rounded"></span>
-              </div>
+              {menuOpen ? (
+                <X className="w-6 h-6 text-white transition-transform duration-200 rotate-180" />
+              ) : (
+                <Menu className="w-6 h-6 text-white transition-transform duration-200" />
+              )}
             </button>
-            <Link to="/" className="text-2xl font-bold text-white ml-2">
+            <Link to="/" className="text-2xl font-bold text-white ml-2 hover:text-kisaan-yellow-lightest transition-colors duration-200">
               Kisaan Suvidha
             </Link>
           </div>
 
-          {/* Hamburger dropdown menu */}
-          {menuOpen && (
-            <div className="absolute top-16 left-0 w-72 bg-white shadow-lg rounded-b-lg z-50 p-4 animate-fade-in">
-              {/* Information Hub */}
-              <div className="mb-4">
-                <h3 className="font-bold text-green-700 mb-2">Information Hub</h3>
-                <ul className="ml-2 space-y-1">
-                  <li><Link to="/explore/market-hub" className="text-gray-700 hover:text-green-700">Market Prices</Link></li>
-                  <li><Link to="/climateconnect" className="text-gray-700 hover:text-green-700">Weather</Link></li>
-                  <li><Link to="/finance" className="text-gray-700 hover:text-green-700">Schemes/Links</Link></li>
-                  <li><Link to="/agroexpert" className="text-gray-700 hover:text-green-700">Agro Expert</Link></li>
-                </ul>
+          {/* Enhanced Sidebar */}
+          <div className={`sidebar-container fixed inset-0 z-50 transition-opacity duration-300 ${menuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+            {/* Backdrop */}
+            <div 
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={() => setMenuOpen(false)}
+            />
+            
+            {/* Sidebar Content */}
+            <div className={`absolute top-0 left-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl transform transition-transform duration-300 ease-out ${menuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+              {/* Header */}
+              <div className="bg-gradient-green-yellow p-6 text-white">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold">Menu</h2>
+                  <button
+                    onClick={() => setMenuOpen(false)}
+                    className="p-2 rounded-lg hover:bg-white/20 transition-colors duration-200"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                    <Leaf className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Kisaan Suvidha</p>
+                    <p className="text-sm opacity-90">Your Farming Companion</p>
+                  </div>
+                </div>
               </div>
-              {/* Farmer Tools */}
-              <div className="mb-4">
-                <h3 className="font-bold text-green-700 mb-2">Farmer Tools</h3>
-                <ul className="ml-2 space-y-1">
-                  <li><Link to="/finance" className="text-gray-700 hover:text-green-700">Budget Estimation</Link></li>
-                  <li><Link to="/soiltesting" className="text-gray-700 hover:text-green-700">Soil Testing</Link></li>
-                </ul>
+
+              {/* Menu Items */}
+              <div className="p-6 space-y-6 overflow-y-auto h-[calc(100vh-140px)]">
+                {menuItems.map((section, sectionIndex) => (
+                  <div key={section.title} className="space-y-3">
+                    <div className="flex items-center space-x-3 text-kisaan-green-dark font-semibold text-sm uppercase tracking-wide">
+                      {section.icon}
+                      <span>{section.title}</span>
+                    </div>
+                    <div className="ml-8 space-y-1">
+                      {section.items.map((item, itemIndex) => (
+                        <Link
+                          key={item.label}
+                          to={item.path}
+                          onClick={() => setMenuOpen(false)}
+                          className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 group ${
+                            item.disabled 
+                              ? 'text-gray-400 cursor-not-allowed' 
+                              : 'text-gray-700 hover:text-kisaan-green-dark hover:bg-kisaan-green-lightest'
+                          }`}
+                          style={{
+                            animationDelay: `${(sectionIndex * 100) + (itemIndex * 50)}ms`
+                          }}
+                        >
+                          <span className={`transition-colors duration-200 ${
+                            item.disabled ? 'text-gray-400' : 'text-kisaan-green-dark group-hover:text-kisaan-green-dark'
+                          }`}>
+                            {item.icon}
+                          </span>
+                          <span className="font-medium">{item.label}</span>
+                          {item.disabled && (
+                            <span className="ml-auto text-xs bg-gray-200 text-gray-500 px-2 py-1 rounded-full">
+                              Coming Soon
+                            </span>
+                          )}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Quick Actions */}
+                <div className="pt-6 border-t border-gray-200">
+                  <div className="flex items-center space-x-3 text-kisaan-green-dark font-semibold text-sm uppercase tracking-wide mb-3">
+                    <LogIn className="w-5 h-5" />
+                    <span>Quick Actions</span>
+                  </div>
+                  <div className="ml-8 space-y-1">
+                    <Link
+                      to="/"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:text-kisaan-green-dark hover:bg-kisaan-green-lightest transition-all duration-200 group"
+                    >
+                      <Home className="w-4 h-4 text-kisaan-green-dark group-hover:text-kisaan-green-dark transition-colors duration-200" />
+                      <span className="font-medium">Back to Home</span>
+                    </Link>
+                    <Link
+                      to="/explore"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:text-kisaan-green-dark hover:bg-kisaan-green-lightest transition-all duration-200 group"
+                    >
+                      <Compass className="w-4 h-4 text-kisaan-green-dark group-hover:text-kisaan-green-dark transition-colors duration-200" />
+                      <span className="font-medium">Explore More</span>
+                    </Link>
               </div>
-              {/* Services */}
-              <div className="mb-4">
-                <h3 className="font-bold text-green-700 mb-2">Services</h3>
-                <ul className="ml-2 space-y-1">
-                  <li><Link to="/planning" className="text-gray-700 hover:text-green-700">Infrastructure Planning</Link></li>
-                  <li><span className="text-gray-400">Direct Selling D2C</span></li>
-                </ul>
               </div>
-              {/* Profile */}
-              <div>
-                <h3 className="font-bold text-green-700 mb-2">Profile</h3>
-                <ul className="ml-2 space-y-1">
-                  <li><Link to="/AdminLogin" className="text-gray-700 hover:text-green-700">Admin</Link></li>
-                  <li><Link to="/FarmerLogin" className="text-gray-700 hover:text-green-700">Farmer Login</Link></li>
-                  <li><Link to="/BuyerLogin" className="text-gray-700 hover:text-green-700">Buyer Login</Link></li>
-                  <li><Link to="/ServiceProviderLogin" className="text-gray-700 hover:text-green-700">Service Provider Login</Link></li>
-                </ul>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Main nav links */}
           <div className="flex items-center space-x-4">
@@ -161,6 +348,53 @@ const Navbar = () => {
           </div>
         </div>
       </div>
+
+      {/* Custom CSS for animations */}
+      <style jsx>{`
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        
+        @keyframes scaleIn {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        
+        .sidebar-container .space-y-1 > * {
+          animation: slideIn 0.3s ease-out forwards;
+          opacity: 0;
+        }
+        
+        .sidebar-container {
+          animation: fadeIn 0.2s ease-out;
+        }
+        
+        .sidebar-container > div:last-child {
+          animation: scaleIn 0.3s ease-out;
+        }
+      `}</style>
     </nav>
   );
 };

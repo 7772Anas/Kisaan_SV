@@ -93,6 +93,7 @@ export default function FarmerProfile() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [formData, setFormData] = useState({ name: "", phone_number: "", address: "", description: "" });
   const [activeTab, setActiveTab] = useState("stocks");
+  const [appointmentTab, setAppointmentTab] = useState(false);
   const [stockEditModalOpen, setStockEditModalOpen] = useState(false);
   const [stockFormData, setStockFormData] = useState({ commodityName: "", stockQuantity: "1" });
   const [editingStockIndex, setEditingStockIndex] = useState(null);
@@ -101,6 +102,10 @@ export default function FarmerProfile() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [appointments, setAppointments] = useState([]);
+  const [loadingAppointments, setLoadingAppointments] = useState(false);
+  const [requests, setRequests] = useState([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -187,6 +192,16 @@ export default function FarmerProfile() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (appointmentTab) {
+      fetchAppointments();
+    }
+    if (activeTab === 'requests' && !appointmentTab) {
+      fetchRequests();
+    }
+    // eslint-disable-next-line
+  }, [appointmentTab, activeTab]);
+
   const fetchFarmerStocks = async (userId) => {
     try {
       setLoadingStocks(true);
@@ -206,6 +221,60 @@ export default function FarmerProfile() {
       console.error('Unexpected error fetching stocks:', error);
     } finally {
       setLoadingStocks(false);
+    }
+  };
+
+  const fetchAppointments = async () => {
+    setLoadingAppointments(true);
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session?.user) {
+        setAppointments([]);
+        setLoadingAppointments(false);
+        return;
+      }
+      const userId = sessionData.session.user.id;
+      const { data, error } = await supabase
+        .from('soil_table')
+        .select('*')
+        .eq('farmer_id', userId)
+        .order('created_at', { ascending: false });
+      if (error) {
+        setAppointments([]);
+      } else {
+        setAppointments(data || []);
+      }
+    } catch (err) {
+      setAppointments([]);
+    } finally {
+      setLoadingAppointments(false);
+    }
+  };
+
+  const fetchRequests = async () => {
+    setLoadingRequests(true);
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session?.user) {
+        setRequests([]);
+        setLoadingRequests(false);
+        return;
+      }
+      const userId = sessionData.session.user.id;
+      const { data, error } = await supabase
+        .from('service_requests')
+        .select('*')
+        .eq('farmer_id', userId)
+        .order('updated_at', { ascending: false });
+      if (error) {
+        setRequests([]);
+      } else {
+        setRequests(data || []);
+      }
+    } catch (err) {
+      setRequests([]);
+    } finally {
+      setLoadingRequests(false);
     }
   };
 
@@ -496,7 +565,14 @@ export default function FarmerProfile() {
               onClick={() => setDrawerOpen(false)}
               aria-label="Close Menu"
             >
-              <X className="w-6 h-6 text-green-700" />
+              <span className="block relative w-7 h-7">
+                <span className={`absolute inset-0 transition-opacity duration-200 ${drawerOpen ? 'opacity-0' : 'opacity-100'}`}>
+                  <PanelLeft className="w-7 h-7 text-green-700" />
+                </span>
+                <span className={`absolute inset-0 transition-opacity duration-200 ${drawerOpen ? 'opacity-100' : 'opacity-0'}`}>
+                  <X className="w-7 h-7 text-green-700" />
+                </span>
+              </span>
             </button>
           )}
           <h2 className="text-lg font-bold mb-6 text-green-700 flex items-center gap-2"><PanelLeft className="w-6 h-6 text-green-600" />Profile Menu</h2>
@@ -590,31 +666,49 @@ export default function FarmerProfile() {
           <div className="px-6">
             <div className="flex relative">
               <button
-                onClick={() => setActiveTab("stocks")}
+                onClick={() => { setActiveTab("stocks"); setAppointmentTab(false); }}
                 className={`px-6 py-4 text-lg font-medium transition-colors duration-200 ${
-                  activeTab === "stocks" 
-                    ? "text-green-600" 
+                  activeTab === "stocks" && !appointmentTab
+                    ? "text-green-600"
                     : "text-gray-500 hover:text-gray-700"
                 }`}
               >
                 Stocks
               </button>
               <button
-                onClick={() => setActiveTab("requests")}
+                onClick={() => { setActiveTab("requests"); setAppointmentTab(false); }}
                 className={`px-6 py-4 text-lg font-medium transition-colors duration-200 ${
-                  activeTab === "requests" 
-                    ? "text-green-600" 
+                  activeTab === "requests" && !appointmentTab
+                    ? "text-green-600"
                     : "text-gray-500 hover:text-gray-700"
                 }`}
               >
                 Requests
               </button>
+              <button
+                onClick={() => { setActiveTab(""); setAppointmentTab(true); }}
+                className={`px-6 py-4 text-lg font-medium transition-colors duration-200 ${
+                  appointmentTab
+                    ? "text-green-600"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                My Appointment
+              </button>
               {/* Animated underline */}
-              <div 
+              <div
                 className="absolute bottom-0 h-0.5 bg-green-600 transition-all duration-300 ease-in-out"
                 style={{
-                  width: '80px',
-                  left: activeTab === "stocks" ? '24px' : '104px'
+                  width: appointmentTab
+                    ? '180px'
+                    : activeTab === 'stocks'
+                      ? '72px'
+                      : '92px',
+                  left: appointmentTab
+                    ? '224px'
+                    : activeTab === 'stocks'
+                      ? '15px'
+                      : '112px',
                 }}
               />
             </div>
@@ -623,7 +717,7 @@ export default function FarmerProfile() {
 
         {/* Tab Content */}
         <div className="flex-1 p-6">
-          {activeTab === "stocks" && (
+          {activeTab === "stocks" && !appointmentTab && (
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h3 className="text-xl font-semibold text-gray-800 mb-4">Your Stocks</h3>
               
@@ -704,17 +798,49 @@ export default function FarmerProfile() {
             </div>
           )}
           
-          {activeTab === "requests" && (
-            <div className="bg-white rounded-lg shadow-sm p-6 relative">
+          {activeTab === "requests" && !appointmentTab && (
+            <div className="bg-white rounded-lg shadow-sm p-6 flex flex-col">
               <h3 className="text-xl font-semibold text-gray-800 mb-4">Your Requests</h3>
-              <div className="text-gray-500 text-center py-8">
-                <div className="text-4xl mb-2">📋</div>
-                <p>No requests available yet</p>
-                <p className="text-sm">Your request information will appear here</p>
-              </div>
+              {loadingRequests ? (
+                <div className="text-gray-500 text-center py-8">Loading requests...</div>
+              ) : requests.length === 0 ? (
+                <div className="text-gray-500 text-center py-8">
+                  <div className="text-4xl mb-2">📋</div>
+                  <p>No requests available yet</p>
+                  <p className="text-sm">Your request information will appear here</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-green-200">
+                    <thead className="bg-green-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-green-700 uppercase tracking-wider">S.No</th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-green-700 uppercase tracking-wider">Request Type</th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-green-700 uppercase tracking-wider">Status</th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-green-700 uppercase tracking-wider">Service Booked Time</th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-green-700 uppercase tracking-wider">Description</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-green-100">
+                      {requests.map((req, idx) => (
+                        <tr key={req.id}>
+                          <td className="px-4 py-2 text-gray-700">{idx + 1}</td>
+                          <td className="px-4 py-2 text-green-800 font-medium">{req.category}</td>
+                          <td className="px-4 py-2">
+                            <span className="inline-block px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-semibold">{req.status || 'Pending'}</span>
+                          </td>
+                          <td className="px-4 py-2 text-gray-700">{req.updated_at ? new Date(req.updated_at).toLocaleString() : '-'}</td>
+                          <td className="px-4 py-2 text-gray-700">{req.description}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
               {/* Explore Services Button */}
+              <div className="flex-1" />
               <button
-                className="absolute right-6 bottom-6 bg-gradient-to-r from-green-500 to-lime-400 text-white px-5 py-2 rounded-lg shadow hover:from-green-600 hover:to-lime-500 transition-all duration-200 font-semibold text-base flex items-center gap-2"
+                className="mt-8 self-end bg-gradient-to-r from-green-500 to-lime-400 text-white px-5 py-2 rounded-lg shadow hover:from-green-600 hover:to-lime-500 transition-all duration-200 font-semibold text-base flex items-center gap-2"
                 onClick={() => {
                   navigate('/planning');
                   setTimeout(() => window.scrollTo({ top: 0, behavior: 'auto' }), 0);
@@ -723,6 +849,47 @@ export default function FarmerProfile() {
                 <Search className="w-5 h-5" />
                 Explore Services
               </button>
+            </div>
+          )}
+          {appointmentTab && (
+            <div className="bg-white rounded-lg shadow-sm p-6 relative">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">My Appointment</h3>
+              {loadingAppointments ? (
+                <div className="text-gray-500 text-center py-8">Loading appointments...</div>
+              ) : appointments.length === 0 ? (
+                <div className="text-gray-500 text-center py-8">
+                  <div className="text-4xl mb-2">📅</div>
+                  <p>No appointments available yet</p>
+                  <p className="text-sm">Your appointment information will appear here</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-green-200">
+                    <thead className="bg-green-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-green-700 uppercase tracking-wider">S.No</th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-green-700 uppercase tracking-wider">Appointment Type</th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-green-700 uppercase tracking-wider">Status</th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-green-700 uppercase tracking-wider">Schedule</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-green-100">
+                      {appointments.map((appt, idx) => (
+                        <tr key={appt.id}>
+                          <td className="px-4 py-2 text-gray-700">{idx + 1}</td>
+                          <td className="px-4 py-2 text-green-800 font-medium">Soil Testing</td>
+                          <td className="px-4 py-2">
+                            <span className="inline-block px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs font-semibold">Pending</span>
+                          </td>
+                          <td className="px-4 py-2 text-gray-700">
+                            {appt.from_date} - {appt.to_date}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
         </div>

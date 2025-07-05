@@ -1,8 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Papa from 'papaparse';
-import mh1 from '../ks-images/mh2.jpg';
-import mh2 from '../ks-images/mh1.jpg';
-import Navbar from './Navbar';
+//import mh1 from '../ks-images/mh2.jpg';
+//import mh2 from '../ks-images/mh1.jpg';
+import { 
+  TrendingUp, 
+  Search, 
+  BarChart3, 
+  PieChart, 
+  Activity, 
+  Calendar,
+  MapPin,
+  Package,
+  DollarSign,
+  ArrowRight,
+  RefreshCw,
+  Eye,
+  EyeOff,
+ 
+  Filter,
+  Info
+} from 'lucide-react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -46,9 +63,14 @@ function MarketHub() {
   const [error, setError] = useState(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
   const barChartRef = useRef(null);
   const lineChartRef = useRef(null);
   const pieChartRef = useRef(null);
+
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -213,15 +235,15 @@ function MarketHub() {
         {
           label: 'Arrivals (Supply)',
           data: sortedData.map(item => parseFloat(item.Arrivals)),
-          borderColor: 'rgb(75, 192, 192)',
-          backgroundColor: 'rgba(75, 192, 192, 0.5)',
+          borderColor: '#22c55e',
+          backgroundColor: 'rgba(34, 197, 94, 0.5)',
           yAxisID: 'y',
         },
         {
           label: 'Modal Price (Demand)',
           data: sortedData.map(item => parseFloat(item.Model)),
-          borderColor: 'rgb(255, 99, 132)',
-          backgroundColor: 'rgba(255, 99, 132, 0.5)',
+          borderColor: '#eab308',
+          backgroundColor: 'rgba(234, 179, 8, 0.5)',
           yAxisID: 'y1',
         },
       ],
@@ -234,14 +256,14 @@ function MarketHub() {
         {
           label: 'Arrivals',
           data: sortedData.map(item => parseFloat(item.Arrivals)),
-          borderColor: 'rgb(54, 162, 235)',
-          backgroundColor: 'rgba(54, 162, 235, 0.5)',
+          borderColor: '#22c55e',
+          backgroundColor: 'rgba(34, 197, 94, 0.5)',
         },
         {
           label: 'Modal Price',
           data: sortedData.map(item => parseFloat(item.Model)),
-          borderColor: 'rgb(255, 159, 64)',
-          backgroundColor: 'rgba(255, 159, 64, 0.5)',
+          borderColor: '#eab308',
+          backgroundColor: 'rgba(234, 179, 8, 0.5)',
         },
       ],
     };
@@ -266,16 +288,16 @@ function MarketHub() {
         {
           data: Object.values(priceRanges),
           backgroundColor: [
-            'rgba(75, 192, 192, 0.6)',
-            'rgba(255, 206, 86, 0.6)',
-            'rgba(255, 99, 132, 0.6)',
+            'rgba(34, 197, 94, 0.6)',
+            'rgba(234, 179, 8, 0.6)',
+            'rgba(239, 68, 68, 0.6)',
           ],
           borderColor: [
-            'rgb(75, 192, 192)',
-            'rgb(255, 206, 86)',
-            'rgb(255, 99, 132)',
+            '#22c55e',
+            '#eab308',
+            '#ef4444',
           ],
-          borderWidth: 1,
+          borderWidth: 2,
         },
       ],
     };
@@ -310,10 +332,23 @@ function MarketHub() {
     plugins: {
       legend: {
         position: 'top',
+        labels: {
+          usePointStyle: true,
+          padding: 20,
+          font: {
+            size: 12,
+            weight: 'bold'
+          }
+        }
       },
       title: {
         display: true,
         text: 'Market Analysis',
+        font: {
+          size: 16,
+          weight: 'bold'
+        },
+        color: '#374151'
       },
     },
     animation: {
@@ -335,7 +370,13 @@ function MarketHub() {
         title: {
           display: true,
           text: 'Arrivals',
+          font: {
+            weight: 'bold'
+          }
         },
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)'
+        }
       },
       y1: {
         type: 'linear',
@@ -344,11 +385,19 @@ function MarketHub() {
         title: {
           display: true,
           text: 'Price',
+          font: {
+            weight: 'bold'
+          }
         },
         grid: {
           drawOnChartArea: false,
         },
       },
+      x: {
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)'
+        }
+      }
     },
   };
 
@@ -370,10 +419,23 @@ function MarketHub() {
     plugins: {
       legend: {
         position: 'top',
+        labels: {
+          usePointStyle: true,
+          padding: 20,
+          font: {
+            size: 12,
+            weight: 'bold'
+          }
+        }
       },
       title: {
         display: true,
         text: 'Price Distribution',
+        font: {
+          size: 16,
+          weight: 'bold'
+        },
+        color: '#374151'
       },
     },
     animation: {
@@ -389,72 +451,80 @@ function MarketHub() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar showAuth={false} />
-      
-      {/* Hero Section with Gradient Background */}
-      <div className="bg-gradient-to-r from-green-600 to-green-800 py-16">
-        <div className="container mx-auto px-4">
-          <h1 className="text-4xl md:text-5xl font-bold text-center mb-8 text-white">
-            Know Your Local Mandi Prices
-          </h1>
-          <p className="text-xl text-center text-green-100 mb-12">
-            Access real-time market data and make informed decisions for your agricultural produce
-          </p>
-          
-          {/* First Image and Text Section */}
-          <div className="flex flex-col md:flex-row items-start gap-8 mb-16 bg-white/10 backdrop-blur-sm p-8 rounded-lg">
-            <div className="w-full md:w-1/4">
-              <img 
-                src={mh1}
-                alt="Market Data Analysis" 
-                className="w-full h-auto rounded-lg shadow-lg object-cover"
-                style={{ maxHeight: '250px' }}
-              />
-            </div>
-            <div className="w-full md:w-3/4 pl-0">
-              <p className="text-base text-white leading-relaxed">
-                Access comprehensive market data including arrivals and prices across various commodities. 
-                Our platform provides real-time insights to help you make informed decisions about your agricultural produce.
-                Stay updated with the latest market trends and make data-driven decisions for your farming business. 
-                Our comprehensive database covers multiple markets and commodities across different districts.
-                Understanding market requirements and real-time price trends is crucial for every farmer aiming to make informed decisions before selling their produce. Local mandis and Agricultural Produce Market Committees (APMCs) play a vital role in determining how agricultural commodities are priced and distributed across districts. However, farmers often struggle with access to timely and accurate data, resulting in poor price realization and budget mismanagement. With fluctuating demand, unpredictable arrivals, and lack of transparent pricing structures, many are forced to rely on middlemen or outdated sources. Our platform addresses this gap by offering updated market insights, commodity-wise pricing, and mandi-level data specific to Telangana — empowering farmers to plan better, negotiate confidently, and maximize their profits.
-              </p>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-kisaan-green-lightest to-gray-100 pt-20 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-kisaan-green/10 to-transparent rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-kisaan-yellow/10 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-kisaan-green/5 to-kisaan-yellow/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }} />
+      </div>
 
-          {/* Second Image and Text Section */}
-          <div className="flex flex-col md:flex-row-reverse items-start gap-8 bg-white/10 backdrop-blur-sm p-8 rounded-lg">
-            <div className="w-full md:w-1/4">
-              <img 
-                src={mh2}
-                alt="Market Trends" 
-                className="w-full h-auto rounded-lg shadow-lg object-cover"
-                style={{ maxHeight: '250px' }}
-              />
+      <div className="container mx-auto px-4 py-8 relative z-10">
+        {/* Hero Section */}
+        <div className={`text-center mb-12 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-kisaan-green/20 to-kisaan-yellow/20 backdrop-blur-sm rounded-full px-6 py-2 mb-6 border border-kisaan-green/20">
+            <TrendingUp className="w-5 h-5 text-kisaan-green" />
+            <span className="text-kisaan-green-dark font-medium">Market Intelligence</span>
+            <BarChart3 className="w-5 h-5 text-kisaan-yellow" />
+          </div>
+          
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-800 mb-6">
+            Know Your Local
+            <span className="block bg-gradient-to-r from-kisaan-green to-kisaan-yellow bg-clip-text text-transparent">
+              Mandi Prices
+            </span>
+          </h1>
+          
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-8">
+            Access real-time market data and make informed decisions for your agricultural produce. 
+            Stay updated with the latest market trends and maximize your profits.
+          </p>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-12">
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-kisaan-green/20 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+              <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-kisaan-green to-kisaan-green-dark rounded-xl mb-4 mx-auto">
+                <Package className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">{commodities.length}</h3>
+              <p className="text-gray-600">Commodities</p>
             </div>
-            <div className="w-full md:w-3/4 pr-0">
-              <p className="text-base text-white leading-relaxed">
-                Stay updated with the latest market trends and make data-driven decisions for your farming business. 
-                Our comprehensive database covers multiple markets and commodities across different districts.
-                Access comprehensive market data including arrivals and prices across various commodities. 
-                Our platform provides real-time insights to help you make informed decisions about your agricultural produce.
-              </p>
+            
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-kisaan-green/20 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+              <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-kisaan-yellow to-kisaan-yellow-dark rounded-xl mb-4 mx-auto">
+                <MapPin className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">{districts.length}</h3>
+              <p className="text-gray-600">Districts</p>
+            </div>
+            
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-kisaan-green/20 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+              <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-kisaan-green to-kisaan-yellow rounded-xl mb-4 mx-auto">
+                <DollarSign className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">{markets.length}</h3>
+              <p className="text-gray-600">Markets</p>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Search Section */}
-      <div className="container mx-auto px-4 py-12">
-        <div className="bg-white p-8 rounded-lg shadow-lg">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Search Market Data</h2>
+        {/* Search Section */}
+        <div className={`bg-white/90 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-kisaan-green/20 mb-12 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="flex items-center gap-3 mb-8">
+            <div className="p-3 bg-gradient-to-br from-kisaan-green to-kisaan-green-dark rounded-xl">
+              <Search className="w-6 h-6 text-white" />
+            </div>
+            <h2 className="text-3xl font-bold text-gray-800">Search Market Data</h2>
+          </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Data Type</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <Filter className="w-4 h-4" />
+                Data Type
+              </label>
               <select 
-                className="w-full p-2 border rounded focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-kisaan-green focus:border-kisaan-green transition-all duration-300 bg-white/80 backdrop-blur-sm"
                 value={selectedType}
                 onChange={(e) => setSelectedType(e.target.value)}
               >
@@ -463,10 +533,13 @@ function MarketHub() {
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Commodity</label>
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <Package className="w-4 h-4" />
+                Commodity
+              </label>
               <select 
-                className={`w-full p-2 border rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 ${isLoading ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                className={`w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-kisaan-green focus:border-kisaan-green transition-all duration-300 bg-white/80 backdrop-blur-sm ${isLoading ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 value={selectedCommodity}
                 onChange={(e) => setSelectedCommodity(e.target.value)}
                 disabled={isLoading}
@@ -478,10 +551,13 @@ function MarketHub() {
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">District</label>
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
+                District
+              </label>
               <select 
-                className={`w-full p-2 border rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 ${isLoading ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                className={`w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-kisaan-green focus:border-kisaan-green transition-all duration-300 bg-white/80 backdrop-blur-sm ${isLoading ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 value={selectedDistrict}
                 onChange={(e) => setSelectedDistrict(e.target.value)}
                 disabled={isLoading}
@@ -493,10 +569,13 @@ function MarketHub() {
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Market</label>
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <DollarSign className="w-4 h-4" />
+                Market
+              </label>
               <select 
-                className={`w-full p-2 border rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 ${isLoading ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                className={`w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-kisaan-green focus:border-kisaan-green transition-all duration-300 bg-white/80 backdrop-blur-sm ${isLoading ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 value={selectedMarket}
                 onChange={(e) => setSelectedMarket(e.target.value)}
                 disabled={isLoading}
@@ -510,25 +589,31 @@ function MarketHub() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">From Date</label>
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                From Date
+              </label>
               <input
                 type="date"
                 value={fromDate}
                 onChange={(e) => setFromDate(e.target.value)}
-                className={`w-full p-2 border rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 ${isLoading ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                className={`w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-kisaan-green focus:border-kisaan-green transition-all duration-300 bg-white/80 backdrop-blur-sm ${isLoading ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 disabled={isLoading}
                 max={toDate || undefined}
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">To Date</label>
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                To Date
+              </label>
               <input
                 type="date"
                 value={toDate}
                 onChange={(e) => setToDate(e.target.value)}
-                className={`w-full p-2 border rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 ${isLoading ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                className={`w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-kisaan-green focus:border-kisaan-green transition-all duration-300 bg-white/80 backdrop-blur-sm ${isLoading ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 disabled={isLoading}
                 min={fromDate || undefined}
               />
@@ -536,136 +621,217 @@ function MarketHub() {
           </div>
 
           {error && (
-            <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-2">
+              <Info className="w-5 h-5" />
               {error}
             </div>
           )}
 
           <button 
             onClick={handleSearch}
-            className={`w-full md:w-auto bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium shadow-md hover:shadow-lg ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`group bg-gradient-to-r from-kisaan-green to-kisaan-green-dark text-white px-8 py-4 rounded-xl hover:from-kisaan-green-dark hover:to-kisaan-green-darkest transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center gap-2 mx-auto ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={isLoading}
           >
-            {isLoading ? 'Loading...' : 'Search Data'}
+            {isLoading ? (
+              <>
+                <RefreshCw className="w-5 h-5 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              <>
+                <Search className="w-5 h-5" />
+                Search Data
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+              </>
+            )}
           </button>
+        </div>
 
-          {/* Results Section */}
-          {filteredData.length > 0 ? (
-            <div className="mt-8 bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-semibold text-gray-800 mb-4">Search Results</h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commodity</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Market</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Arrivals/qui</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Min Price/qui</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Max Price/qui</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modal Price/qui</th>
+        {/* Results Section */}
+        {filteredData.length > 0 ? (
+          <div className={`bg-white/90 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-kisaan-green/20 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-gradient-to-br from-kisaan-green to-kisaan-green-dark rounded-xl">
+                  <Activity className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800">Search Results</h3>
+              </div>
+              <div className="text-sm text-gray-600 bg-gray-100 px-4 py-2 rounded-full">
+                {filteredData.length} records found
+              </div>
+            </div>
+            
+            <div className="overflow-x-auto rounded-2xl border border-gray-200">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gradient-to-r from-kisaan-green/10 to-kisaan-yellow/10">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Commodity</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Market</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Arrivals/qui</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Min Price/qui</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Max Price/qui</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Modal Price/qui</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredData.map((item, index) => (
+                    <tr key={index} className="hover:bg-gradient-to-r hover:from-kisaan-green/5 hover:to-kisaan-yellow/5 transition-all duration-300">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.DDate}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.CommName}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.YardName}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.Arrivals}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.Minimum}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.Maximum}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-kisaan-green-dark">{item.Model}</td>
                     </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredData.map((item, index) => (
-                      <tr key={index} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.DDate}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.CommName}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.YardName}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.Arrivals}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.Minimum}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.Maximum}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.Model}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-              <div className="mt-6 flex justify-center">
-                <button
-                  onClick={() => setShowAnalysis(!showAnalysis)}
-                  className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  {showAnalysis ? 'Hide Analysis' : 'Show Analysis'}
-                </button>
-              </div>
+            <div className="mt-8 flex justify-center">
+              <button
+                onClick={() => setShowAnalysis(!showAnalysis)}
+                className={`group bg-gradient-to-r from-kisaan-yellow to-kisaan-yellow-dark text-white px-8 py-3 rounded-xl hover:from-kisaan-yellow-dark hover:to-kisaan-yellow-darkest transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center gap-2`}
+              >
+                {showAnalysis ? (
+                  <>
+                    <EyeOff className="w-5 h-5" />
+                    Hide Analysis
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-5 h-5" />
+                    Show Analysis
+                  </>
+                )}
+              </button>
+            </div>
 
-              {showAnalysis && (
-                <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="bg-white p-4 rounded-lg shadow">
-                    <h4 className="text-lg font-semibold mb-4">Demand vs Supply Analysis</h4>
+            {showAnalysis && (
+              <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-kisaan-green/20">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 bg-gradient-to-br from-kisaan-green to-kisaan-green-dark rounded-lg">
+                      <BarChart3 className="w-5 h-5 text-white" />
+                    </div>
+                    <h4 className="text-xl font-bold text-gray-800">Demand vs Supply Analysis</h4>
+                  </div>
+                  <div 
+                    className="cursor-pointer hover:opacity-90 transition-opacity"
+                    title="Click to replay animation"
+                  >
+                    <Bar 
+                      ref={barChartRef}
+                      key={`bar-${animationKey}`}
+                      data={prepareChartData()?.demandVsSupplyData} 
+                      options={chartOptions} 
+                    />
+                  </div>
+                  <div className="mt-6 p-4 bg-gradient-to-r from-kisaan-green/10 to-kisaan-yellow/10 rounded-xl border border-kisaan-green/20">
+                    <p className="text-gray-700 flex items-start gap-3">
+                      <span className="text-2xl">{prepareChartData()?.analysis.demandSupply.emoji}</span>
+                      <span>{prepareChartData()?.analysis.demandSupply.text}</span>
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-kisaan-green/20">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 bg-gradient-to-br from-kisaan-yellow to-kisaan-yellow-dark rounded-lg">
+                      <Activity className="w-5 h-5 text-white" />
+                    </div>
+                    <h4 className="text-xl font-bold text-gray-800">Arrival vs Price Trend</h4>
+                  </div>
+                  <div 
+                    className="cursor-pointer hover:opacity-90 transition-opacity"
+                    title="Click to replay animation"
+                  >
+                    <Line 
+                      ref={lineChartRef}
+                      key={`line-${animationKey}`}
+                      data={prepareChartData()?.arrivalVsPriceData} 
+                      options={lineChartOptions} 
+                    />
+                  </div>
+                  <div className="mt-6 p-4 bg-gradient-to-r from-kisaan-green/10 to-kisaan-yellow/10 rounded-xl border border-kisaan-green/20">
+                    <p className="text-gray-700 flex items-start gap-3">
+                      <span className="text-2xl">{prepareChartData()?.analysis.priceTrend.emoji}</span>
+                      <span>{prepareChartData()?.analysis.priceTrend.text}</span>
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-kisaan-green/20 lg:col-span-2">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 bg-gradient-to-br from-kisaan-green to-kisaan-yellow rounded-lg">
+                      <PieChart className="w-5 h-5 text-white" />
+                    </div>
+                    <h4 className="text-xl font-bold text-gray-800">Price Distribution</h4>
+                  </div>
+                  <div className="max-w-md mx-auto">
                     <div 
                       className="cursor-pointer hover:opacity-90 transition-opacity"
                       title="Click to replay animation"
                     >
-                      <Bar 
-                        ref={barChartRef}
-                        key={`bar-${animationKey}`}
-                        data={prepareChartData()?.demandVsSupplyData} 
-                        options={chartOptions} 
+                      <Pie 
+                        ref={pieChartRef}
+                        key={`pie-${animationKey}`}
+                        data={prepareChartData()?.priceDistributionData} 
+                        options={pieOptions} 
                       />
                     </div>
-                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                      <p className="text-gray-700">
-                        <span className="text-2xl mr-2">{prepareChartData()?.analysis.demandSupply.emoji}</span>
-                        {prepareChartData()?.analysis.demandSupply.text}
-                      </p>
-                    </div>
                   </div>
-                  <div className="bg-white p-4 rounded-lg shadow">
-                    <h4 className="text-lg font-semibold mb-4">Arrival vs Price Trend</h4>
-                    <div 
-                      className="cursor-pointer hover:opacity-90 transition-opacity"
-                      title="Click to replay animation"
-                    >
-                      <Line 
-                        ref={lineChartRef}
-                        key={`line-${animationKey}`}
-                        data={prepareChartData()?.arrivalVsPriceData} 
-                        options={lineChartOptions} 
-                      />
-                    </div>
-                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                      <p className="text-gray-700">
-                        <span className="text-2xl mr-2">{prepareChartData()?.analysis.priceTrend.emoji}</span>
-                        {prepareChartData()?.analysis.priceTrend.text}
-                      </p>
-                    </div>
+                  <div className="mt-6 p-4 bg-gradient-to-r from-kisaan-green/10 to-kisaan-yellow/10 rounded-xl border border-kisaan-green/20">
+                    <p className="text-gray-700 flex items-start gap-3">
+                      <span className="text-2xl">{prepareChartData()?.analysis.priceDistribution.emoji}</span>
+                      <span>{prepareChartData()?.analysis.priceDistribution.text}</span>
+                    </p>
                   </div>
-                  <div className="bg-white p-4 rounded-lg shadow md:col-span-2">
-                    <h4 className="text-lg font-semibold mb-4">Price Distribution</h4>
-                    <div className="max-w-md mx-auto">
-                      <div 
-                        className="cursor-pointer hover:opacity-90 transition-opacity"
-                        title="Click to replay animation"
-                      >
-                        <Pie 
-                          ref={pieChartRef}
-                          key={`pie-${animationKey}`}
-                          data={prepareChartData()?.priceDistributionData} 
-                          options={pieOptions} 
-                        />
-                      </div>
-                    </div>
-                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                      <p className="text-gray-700">
-                        <span className="text-2xl mr-2">{prepareChartData()?.analysis.priceDistribution.emoji}</span>
-                        {prepareChartData()?.analysis.priceDistribution.text}
-                      </p>
-                    </div>
-                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className={`text-center py-16 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-kisaan-green/20 shadow-lg">
+              {isLoading ? (
+                <div className="flex items-center justify-center gap-3 text-gray-600">
+                  <RefreshCw className="w-6 h-6 animate-spin" />
+                  <span className="text-lg">Loading market data...</span>
+                </div>
+              ) : (
+                <div className="text-gray-600">
+                  <Search className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                  <p className="text-lg">No data found for the selected criteria.</p>
+                  <p className="text-sm mt-2">Try adjusting your search filters.</p>
                 </div>
               )}
             </div>
-          ) : (
-            <div className="mt-8 text-center text-gray-600">
-              {isLoading ? 'Loading data...' : 
-               filteredData.length === 0 && data.length > 0 ? 'No data found for the selected criteria.' : ''}
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
+
+      {/* Custom CSS for animations */}
+      <style jsx>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fadeInUp {
+          animation: fadeInUp 0.6s ease-out forwards;
+          opacity: 0;
+        }
+      `}</style>
     </div>
   );
 }
